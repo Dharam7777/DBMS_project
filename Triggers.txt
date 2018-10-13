@@ -1,0 +1,34 @@
+CREATE TRIGGER `before_postpaid_insert` BEFORE INSERT ON `postpaid`
+FOR EACH ROW BEGIN
+DECLARE var2 int(10);
+SELECT Balance into var2 from customer c where c.username=any(
+SELECT d.username from does d
+JOIN postpaid p on NEW.rid=d.rid );
+IF NEW.Amount<=var2 then
+update customer c set c.Balance=c.Balance-NEW.Amount
+where c.username=any(
+SELECT d username from does d
+JOIN postpaid p on NEW.rid=d.rid );
+ELSE
+CALL`"INSUFFICIENT BALANCE"`;
+END IF;
+END
+
+
+CREATE TRIGGER `before_prepaid_insert` AFTER INSERT ON `prepaid`
+FOR EACH ROW BEGIN
+DECLARE VAR1 int(6);
+DECLARE var2 decimal(6,2);
+SELECT Balance into VAR1 from customer c where c.username=any(
+SELECT d.username from does d
+JOIN prepaid p on NEW.rid=d.rid where p.pid=NEW.pid );
+SELECT Amount into var2 from plans p
+IF var2<=VAR1 THEN
+UPDATE customer c SET c.Balance=c.Balance-var2
+where c.username=any(
+SELECT d.username from does d
+JOIN prepaid p on NEW.rid=d.rid where p.pid=NEW.pid);
+ELSE
+call`"insuffcient balance"`;
+END IF;
+END
